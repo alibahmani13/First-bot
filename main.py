@@ -10,7 +10,7 @@ logging.basicConfig(format='%(name)s - %(asctime)s - %(levelname)s ',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-API_TOKEN = "7429159046:AAGYuqgAt0VE9vf9rPmuM-Hwpq-Qwut0z0g"
+API_TOKEN = "7429159046:AAHIKRHoScLkyy3z-HgroPyYnXbmTWdxmLA"
 GOLDAPI_KEY = "goldapi-3v4m1smawx0q3m-io"
 
 
