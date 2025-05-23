@@ -5,13 +5,15 @@ from flask import Flask, Response
 from threading import Thread
 import logging
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
 
 API_TOKEN = os.getenv("API_TOKEN")
 GOLDAPI_KEY = os.getenv("GOLDAPI_KEY")
-MY_CHAT_ID = ("6703241949")
+MY_CHAT_ID = os.getenv("MY_CHAT_ID")  # بدون پرانتز اضافه!
+
 logging.basicConfig(level=logging.INFO)
 
 # ==================== Flask ====================
@@ -49,10 +51,11 @@ def get_price(metal_code):  # XAU یا XAG
     }
     try:
         r = requests.get(url, headers=headers)
+        print(r.status_code, r.text)  # برای دیباگ
         if r.status_code == 200:
             return r.json().get("price")
-    except:
-        pass
+    except Exception as e:
+        print("Error in get_price:", e)
     return None
 
 
@@ -67,7 +70,7 @@ def convert_to_toman(usd_price):
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(update.effective_chat.id)
+    print("Chat ID:", update.effective_chat.id)  # برای گرفتن آیدی
     keyboard = [['طلا', 'نقره']]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text("سلام! قیمت چی رو می‌خوای؟", reply_markup=reply_markup)
@@ -93,13 +96,7 @@ async def metal_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("فقط بنویس: طلا یا نقره.")
 
-
-# ==================== Daily Price Endpoint ====================
-
-
-@flask_app.route('/daily_price')
-def daily_price():
-    import time
+# ==================== Auto Price Sender ====================
 
 
 def auto_send_prices():
@@ -110,32 +107,23 @@ def auto_send_prices():
         if gold and silver:
             gold_toman = convert_to_toman(gold)
             silver_toman = convert_to_toman(silver)
-            msg = f"قیمت خودکار برای هر 3 ساعت:\n\nطلا: {gold} دلار / {gold_toman:,} تومان\nنقره: {silver} دلار / {silver_toman:,} تومان"
+            msg = (
+                f"قیمت خودکار برای هر 3 ساعت:\n\n"
+                f"طلا: {gold} دلار / {gold_toman:,} تومان\n"
+                f"نقره: {silver} دلار / {silver_toman:,} تومان"
+            )
         else:
             msg = "خطا در دریافت قیمت خودکار."
 
-        requests.get(f"https://api.telegram.org/bot{API_TOKEN}/sendMessage", params={
-            "chat_id": MY_CHAT_ID,
-            "text": msg
-        })
-    time.sleep(10800)  # یک ساعت = 3600 ثانیه
+        requests.get(
+            f"https://api.telegram.org/bot{API_TOKEN}/sendMessage",
+            params={
+                "chat_id": MY_CHAT_ID,
+                "text": msg
+            }
+        )
 
-    gold = get_price("XAU")
-    silver = get_price("XAG")
-
-    if gold and silver:
-        gold_toman = convert_to_toman(gold)
-        silver_toman = convert_to_toman(silver)
-        msg = f"قیمت روز:\n\nطلا: {gold} دلار / {gold_toman:,} تومان\nنقره: {silver} دلار / {silver_toman:,} تومان"
-    else:
-        msg = "خطا در دریافت قیمت روزانه."
-
-    requests.get(f"https://api.telegram.org/bot{API_TOKEN}/sendMessage", params={
-        "chat_id": MY_CHAT_ID,
-        "text": msg
-    })
-
-    return "ok"
+        time.sleep(86400)  # هر 24 ساعت
 
 # ==================== Run ====================
 
@@ -143,6 +131,7 @@ def auto_send_prices():
 if __name__ == '__main__':
     keep_alive()
 
+    # اجرای ارسال خودکار در ترد جدا
     Thread(target=auto_send_prices, daemon=True).start()
 
     app = ApplicationBuilder().token(API_TOKEN).build()
