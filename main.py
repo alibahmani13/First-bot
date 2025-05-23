@@ -108,7 +108,7 @@ def auto_send_prices():
             gold_toman = convert_to_toman(gold)
             silver_toman = convert_to_toman(silver)
             msg = (
-                f"قیمت خودکار برای هر 3 ساعت:\n\n"
+                f"قیمت خودکار برای هر 24 ساعت:\n\n"
                 f"طلا: {gold} دلار / {gold_toman:,} تومان\n"
                 f"نقره: {silver} دلار / {silver_toman:,} تومان"
             )
